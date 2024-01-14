@@ -5,28 +5,28 @@ import image from "../../img/image-background.jpg";
 const TodoList = () => {
     const [tasks, setTasks] = useState([]);
     const [currentTask, setCurrentTask] = useState('');
-
+    
     const createUser = () => {
-        fetch('https://playground.4geeks.com/apis/fake/todos/user/sprdesign', {
+        return fetch('https://playground.4geeks.com/apis/fake/todos/user/sprdesign', {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify([]) // array vacío en el cuerpo
+            body: JSON.stringify([]) // array vacío
         })
             .then(resp => resp.json())
             .then(data => {
                 console.log(data);
+                return data; // Devuelve los datos para que puedan ser utilizados después
             })
             .catch(error => {
                 console.log(error);
             });
     };
-    
+
     useEffect(() => {
-        createUser() // Llama a la función para crear el usuario al cargar el componente
+        createUser()
             .then(() => {
-                // Llamada a la API para obtener las tareas almacenadas después de que createUser haya completado
                 return fetch('https://playground.4geeks.com/apis/fake/todos/user/sprdesign');
             })
             .then(resp => resp.json())
@@ -37,20 +37,43 @@ const TodoList = () => {
                 console.log(error);
             });
     }, []);
-    
 
 
-
-
-    
     const handleInputChange = (event) => {
         setCurrentTask(event.target.value);
     };
 
-    const addTask = () => {
+    const getTasks = async () => {
+        try {
+            // Obtener la lista actualizada después de agregar la tarea
+            const updatedTasks = await (await fetch('https://playground.4geeks.com/apis/fake/todos/user/sprdesign')).json();
+            
+            setTasks(updatedTasks);// Actualizar con la lista actualizada
+
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    const addTask = async () => {
         if (currentTask.trim()) {
-            setTasks([...tasks, currentTask]); //Añadir task
-            setCurrentTask(""); //Limpiar input
+            try {
+                // Añadir task al servidor
+                const updatedTasks = [...tasks, { label: currentTask }];
+                await fetch('https://playground.4geeks.com/apis/fake/todos/user/sprdesign', {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(updatedTasks)
+                });
+
+                setTasks(updatedTasks); // Actualizar la lista               
+                setCurrentTask("");// Limpiar input
+
+            } catch (error) {
+                console.log(error);
+            }
         }
     };
 
@@ -58,12 +81,11 @@ const TodoList = () => {
         setTasks(tasks.filter((_, i) => i !== index)); //Filtrar tasks y eliminar por el índex
     };
 
-
     const handleKeyPress = (event) => {
         if (event.key === 'Enter') {
-            addTask();
-        }
-    }; //Añade task al pulsar Enter
+            addTask(); //Añade task al pulsar Enter
+        };
+    };
 
 
     return (
@@ -113,7 +135,7 @@ const TodoList = () => {
                                                 className="list-group-item d-flex justify-content-between align-items-center"
                                                 style={{ height: '25px' }}
                                             >
-                                                {task}
+                                                {task.label}
                                                 <span
                                                     className="badge badge-pill"
                                                     style={{
