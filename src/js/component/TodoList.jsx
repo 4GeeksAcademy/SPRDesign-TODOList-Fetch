@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "../../styles/index.css";
 import image from "../../img/image-background.jpg";
 
@@ -6,6 +6,43 @@ const TodoList = () => {
     const [tasks, setTasks] = useState([]);
     const [currentTask, setCurrentTask] = useState('');
 
+    const createUser = () => {
+        fetch('https://playground.4geeks.com/apis/fake/todos/user/sprdesign', {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify([]) // array vacío en el cuerpo
+        })
+            .then(resp => resp.json())
+            .then(data => {
+                console.log(data);
+            })
+            .catch(error => {
+                console.log(error);
+            });
+    };
+    
+    useEffect(() => {
+        createUser() // Llama a la función para crear el usuario al cargar el componente
+            .then(() => {
+                // Llamada a la API para obtener las tareas almacenadas después de que createUser haya completado
+                return fetch('https://playground.4geeks.com/apis/fake/todos/user/sprdesign');
+            })
+            .then(resp => resp.json())
+            .then(data => {
+                setTasks(data);
+            })
+            .catch(error => {
+                console.log(error);
+            });
+    }, []);
+    
+
+
+
+
+    
     const handleInputChange = (event) => {
         setCurrentTask(event.target.value);
     };
