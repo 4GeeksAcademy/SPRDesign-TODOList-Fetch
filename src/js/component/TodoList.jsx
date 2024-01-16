@@ -3,91 +3,103 @@ import "../../styles/index.css";
 import image from "../../img/image-background.jpg";
 
 const TodoList = () => {
-    const [tasks, setTasks] = useState([]);
-    const [currentTask, setCurrentTask] = useState('');
-    
-    const createUser = () => {
-        return fetch('https://playground.4geeks.com/apis/fake/todos/user/sprdesign', {
-            method: "POST",
+    const [tasks, setTasks] = useState([{ label: "", done: false }]); // Estado para almacenar las tareas
+    const [currentTask, setCurrentTask] = useState(''); // Estado para almacenar la tarea actual que se está escribiendo
+
+    // Función asincrónica para obtener las tareas desde el servidor
+    const getTasks = async () => {
+
+        const url = 'https://playground.4geeks.com/apis/fake/todos/user/sprdesign' // URL de la API
+        const request = {
+            method: "GET",
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify([]) // array vacío
-        })
-            .then(resp => resp.json())
-            .then(data => {
-                console.log(data);
-                return data; // Devuelve los datos para que puedan ser utilizados después
-            })
-            .catch(error => {
-                console.log(error);
-            });
-    };
+        }
 
-    useEffect(() => {
-        createUser()
-            .then(() => {
-                return fetch('https://playground.4geeks.com/apis/fake/todos/user/sprdesign');
-            })
-            .then(resp => resp.json())
-            .then(data => {
-                setTasks(data);
-            })
-            .catch(error => {
-                console.log(error);
-            });
-    }, []);
-
-
-    const handleInputChange = (event) => {
-        setCurrentTask(event.target.value);
-    };
-
-    const getTasks = async () => {
         try {
-            // Obtener la lista actualizada después de agregar la tarea
-            const updatedTasks = await (await fetch('https://playground.4geeks.com/apis/fake/todos/user/sprdesign')).json();
-            
-            setTasks(updatedTasks);// Actualizar con la lista actualizada
+            const resp = await fetch(url, request); // Realizar la petición GET al servidor
+            // Verificar si la respuesta es exitosa (código de estado 200)
+            if (resp.ok) {
+                const data = await resp.json(); // Convertir la respuesta a formato JSON
+                setTasks(data); // Actualizar tasks con los datos obtenidos del servidor
+                console.log(data);
+            }
 
         } catch (error) {
             console.log(error);
         }
     };
 
-    const addTask = async () => {
-        if (currentTask.trim()) {
-            try {
-                // Añadir task al servidor
-                const updatedTasks = [...tasks, { label: currentTask }];
-                await fetch('https://playground.4geeks.com/apis/fake/todos/user/sprdesign', {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify(updatedTasks)
-                });
+    // Función para manejar cambios en input
+    // Obtener el valor actual del input. event contiene información sobre la interacción del usuario.
+    // event.target: elemento del DOM que desencadenó el evento, y value: obtiene el valor actual del elemento (el valor del input).
+    // Al usar 'event.target.value', estamos extrayendo el valor actual del input y actualizando currentTask con ese valor.
+    const handleInputChange = (event) => {
+        setCurrentTask(event.target.value); // Actualizar currentTask con el valor del campo de entrada
+    };
 
-                setTasks(updatedTasks); // Actualizar la lista               
-                setCurrentTask("");// Limpiar input
+    // Efecto para cargar las tareas al cargar el componente
+    useEffect(() => {
+        getTasks(); // Llamar a la función getTasks al montar el componente y cuando [] está vacío
+    }, []);
+
+    // Función para agregar una tarea
+    const addTask = async (event) => {
+        // Verificar si la tecla presionada es 'Enter'
+        if (event.key === 'Enter') {
+
+            const newTask = tasks.concat([{ label: currentTask, done: false }]); // Concatenar la nueva tarea a la lista de tareas
+
+            const url = 'https://playground.4geeks.com/apis/fake/todos/user/sprdesign'
+            const request = {
+                method: "PUT", // petición de añadir
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(newTask) // Convertir newTask a JSON y asignarla como cuerpo de la petición
+            }
+            try {
+                const response = await fetch(url, request) // Realizar la petición PUT al servidor
+                if (!response.ok) throw Error("There was a mistake"); // Verificar si la respuesta es exitosa 
+                getTasks(); // Actualizar la lista de tareas después de agregar una nueva
 
             } catch (error) {
-                console.log(error);
+                console.log(error); // Manejo de errores
             }
+            setCurrentTask("");// Limpiar el input después de agregar la tarea
+        }
+    }
+
+    // Función para eliminar una tarea
+    const deleteTask = async (index) => {
+        
+        const updatedTasks = tasks.filter((_, i) => i !== index);// Filtrar la tarea que se va a eliminar de la lista de tareas actual
+
+        try {
+            // Enviar la lista actualizada de tareas al servidor
+            const response = await fetch('https://playground.4geeks.com/apis/fake/todos/user/sprdesign', {
+                method: "PUT",
+                body: JSON.stringify(updatedTasks),
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            });
+
+            // Verificar si la respuesta del servidor es exitosa
+            if (response.ok) {
+                // Actualizar tasks con la lista de tareas actualizada
+                setTasks(updatedTasks);
+            } else {
+                // error si hay problemas al actualizar las tareas
+                throw Error("Error updating tasks.");
+            }
+        } catch (error) {
+            console.error("Error in the PUT request", error);
         }
     };
 
-    const deleteTask = (index) => {
-        setTasks(tasks.filter((_, i) => i !== index)); //Filtrar tasks y eliminar por el índex
-    };
-
-    const handleKeyPress = (event) => {
-        if (event.key === 'Enter') {
-            addTask(); //Añade task al pulsar Enter
-        };
-    };
-
-
+    // Renderizar el componente
     return (
         <div className="image-background" style={{
             backgroundImage: `url(${image})`,
@@ -121,7 +133,7 @@ const TodoList = () => {
                                                 placeholder="What needs to be done?"
                                                 value={currentTask}
                                                 onChange={handleInputChange}
-                                                onKeyDown={handleKeyPress}
+                                                onKeyDown={addTask}
                                                 style={{ height: '25px', boxShadow: 'none' }}
                                                 maxLength={18} // longitud máxima de carácteres
                                             />
@@ -153,7 +165,7 @@ const TodoList = () => {
                                     <p className="mt-3 w-100 opacity-50" style={{
                                         fontSize: "12px",
                                         color: "white",
-                                    }}>{tasks.length} Items Left</p>
+                                    }}>{tasks.length} Items Left</p> //-1 para que cuente a partir de la posicion 1 y obviar la posición 0(example task)
 
                                 </div>
                             </div>
