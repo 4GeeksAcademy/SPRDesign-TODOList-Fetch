@@ -3,7 +3,7 @@ import "../../styles/index.css";
 import image from "../../img/image-background.jpg";
 
 const TodoList = () => {
-    const [tasks, setTasks] = useState([{ label: "", done: false }]); // Estado para almacenar las tareas
+    const [tasks, setTasks] = useState([]); // Estado para almacenar las tareas
     const [currentTask, setCurrentTask] = useState(''); // Estado para almacenar la tarea actual que se está escribiendo
 
     // Función asincrónica para obtener las tareas desde el servidor
@@ -19,15 +19,39 @@ const TodoList = () => {
 
         try {
             const resp = await fetch(url, request); // Realizar la petición GET al servidor
-            // Verificar si la respuesta es exitosa (código de estado 200)
+            // Verificar si la respuesta es exitosa
             if (resp.ok) {
                 const data = await resp.json(); // Convertir la respuesta a formato JSON
                 setTasks(data); // Actualizar tasks con los datos obtenidos del servidor
                 console.log(data);
             }
+            if (!resp.ok) {
+                throw Error(resp.status);
+              }
+
 
         } catch (error) {
-            console.log(error);
+            if (error.message == 404) {
+                fetch(url, {
+                    method: "POST",
+                    body: JSON.stringify([]),
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                })
+                    .then((response) => {
+                        if (!response.ok) {
+                            throw Error(response.status);
+                        }
+                        return response.json();
+                    })
+                    .then((data) => {
+                        console.log(data);
+                    })
+                    .catch((error) => {
+                        console.log(error);
+                    });
+            }
         }
     };
 
@@ -73,7 +97,7 @@ const TodoList = () => {
 
     // Función para eliminar una tarea
     const deleteTask = async (index) => {
-        
+
         const updatedTasks = tasks.filter((_, i) => i !== index);// Filtrar la tarea que se va a eliminar de la lista de tareas actual
 
         try {
