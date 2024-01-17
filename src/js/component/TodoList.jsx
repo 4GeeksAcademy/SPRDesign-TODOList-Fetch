@@ -5,11 +5,11 @@ import image from "../../img/image-background.jpg";
 const TodoList = () => {
     const [tasks, setTasks] = useState([]); // Estado para almacenar las tareas
     const [currentTask, setCurrentTask] = useState(''); // Estado para almacenar la tarea actual que se está escribiendo
+    const url = 'https://playground.4geeks.com/apis/fake/todos/user/sprdesign'// URL de la API
 
     // Función asincrónica para obtener las tareas desde el servidor
     const getTasks = async () => {
 
-        const url = 'https://playground.4geeks.com/apis/fake/todos/user/sprdesign' // URL de la API
         const request = {
             method: "GET",
             headers: {
@@ -25,13 +25,18 @@ const TodoList = () => {
                 setTasks(data); // Actualizar tasks con los datos obtenidos del servidor
                 console.log(data);
             }
+            // Verificar si la respuesta no está bien que indique el error
             if (!resp.ok) {
                 throw Error(resp.status);
-              }
+            }
 
 
         } catch (error) {
+            // Manejar posibles errores durante la obtención de tareas
             if (error.message == 404) {
+                // Si se recibe un código de estado 404 (Not Found), inicializar el servidor con una lista vacía
+
+                // Realizar una solicitud POST para crear una lista vacía en el servidor
                 fetch(url, {
                     method: "POST",
                     body: JSON.stringify([]),
@@ -40,19 +45,24 @@ const TodoList = () => {
                     },
                 })
                     .then((response) => {
+                        // Verificar si la respuesta del servidor es exitosa, si no lo es lanzar error
                         if (!response.ok) {
                             throw Error(response.status);
                         }
+                        // Convertir la respuesta a formato JSON
                         return response.json();
                     })
                     .then((data) => {
+                        // Imprimir en la consola los datos recibidos después de inicializar el servidor
                         console.log(data);
                     })
                     .catch((error) => {
+                        // Manejar posibles errores durante la solicitud POST
                         console.log(error);
                     });
             }
-        }
+        };
+
     };
 
     // Función para manejar cambios en input
@@ -123,6 +133,38 @@ const TodoList = () => {
         }
     };
 
+    // Función para eliminar todas las tareas
+    function deleteAllTasks() {
+        // Realizar una solicitud DELETE al servidor usando la URL proporcionada
+        fetch(url, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        })
+            .then((response) => {
+                // Verificar si la respuesta del servidor es exitosa
+                if (!response.ok) {
+                    throw Error(response.statusText);
+                }
+                // Convertir la respuesta a formato JSON
+                return response.json();
+            })
+            .then(() => {
+                // Limpiar la lista de tareas local después de eliminarlas del servidor
+                setTasks([]);
+
+                // Recargar las tareas del usuario después de eliminarlas
+                getTasks();
+            })
+            .catch((error) => {
+                // Capturar y manejar cualquier error que ocurra durante el proceso
+                // Imprimir un mensaje indicando un problema, seguido de un salto de línea (\n),y mostrar los detalles específicos del error en la consola
+                console.log("Looks like there was a problem: \n", error);
+
+            });
+    }
+
     // Renderizar el componente
     return (
         <div className="image-background" style={{
@@ -189,7 +231,30 @@ const TodoList = () => {
                                     <p className="mt-3 w-100 opacity-50" style={{
                                         fontSize: "12px",
                                         color: "white",
-                                    }}>{tasks.length} Items Left</p> //-1 para que cuente a partir de la posicion 1 y obviar la posición 0(example task)
+                                        position: "relative",
+                                        textAlign: "center",
+                                        margin: 0,
+                                    }}>
+                                        <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
+                                            {tasks.length} Items Left
+                                        </span>
+                                        <button
+                                            type="button"
+                                            style={{
+                                                fontSize: "14px",
+                                                color: "white",
+                                                position: "absolute",
+                                                right: 0,
+                                                background: "transparent",
+                                                border: "none",
+                                                top: "-4px",
+                                            }}
+                                            onClick={deleteAllTasks}
+                                        >
+                                            <i className="fas fa-undo"></i>
+                                        </button>
+
+                                    </p>
 
                                 </div>
                             </div>
